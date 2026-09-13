@@ -34,27 +34,40 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-func (a *App) ReadFile(path string) (string, error) {
+type ImageData struct {
+	Base64Image string `json:"base64Image"`
+	Histogram   []int  `json:"histogram"`
+}
+
+func (a *App) ReadFile(path string) (ImageData, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", err
+		return ImageData{}, err
 	}
 	defer file.Close()
 
 	img, _, err := image.Decode(file)
 	if err != nil {
-		return "", err
+		return ImageData{}, err
+	}
+
+	histogram, err := generateGrayscaleHistogram(img)
+	if err != nil {
+		return ImageData{}, err
 	}
 
 	// Encode inverted image to PNG in buffer
 	var buf bytes.Buffer
 	err = png.Encode(&buf, img)
 	if err != nil {
-		return "", err
+		return ImageData{}, err
 	}
 
 	// Return base64 of inverted image
-	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+	return ImageData{
+		Base64Image: base64.StdEncoding.EncodeToString(buf.Bytes()),
+		Histogram:   histogram,
+	}, nil
 }
 
 func (a *App) InvertImage(base64Src string) (string, error) {
@@ -92,4 +105,19 @@ func (a *App) InvertImage(base64Src string) (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+func generateGrayscaleHistogram(src image.Image) ([]int, error) {
+	hist := make([]int, 256)
+	bounds := src.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := src.At(x, y).RGBA()
+			// Convert to 8-bit grayscale value
+			gray := uint8((r>>8 + g>>8 + b>>8) / 3)
+			hist[gray]++
+		}
+	}
+
+	return hist, nil
 }
