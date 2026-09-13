@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react'
 import { OnFileDrop } from '../wailsjs/runtime'
 import { ReadFile, InvertImage } from '../wailsjs/go/main/App'
-import { AreaChart, Area, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, Legend, ResponsiveContainer } from 'recharts'
 
 function App() {
 
   const [base64Image, setBase64Image] = useState<string | null>(null);
-  const [histogram, setHistogram] = useState<number[] | null>(null);
+  const [histogramChannels, setHistogramChannels] = useState<{ channel: string; data: number[] }[] | null>(null);
   const [invertedImage, setInvertedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visibleAreas, setVisibleAreas] = useState({ red: true, green: true, blue: true, gray: true });
 
   useEffect(() => {
       OnFileDrop(( _, __, paths) => {
         console.log('Dropped files:', paths);
         setLoading(true);
         setError(null);
-        ReadFile(paths[0]).then((data) => {
+        ReadFile(paths[0]).then((data: any) => {
           setBase64Image(data.base64Image);
-          setHistogram(data.histogram);
+          // Store all histogram channels (Red, Green, Blue, Grayscale)
+          setHistogramChannels(data.histogram || null);
           setLoading(false);
         }).catch((err) => {
           console.error('Error reading file:', err);
@@ -46,9 +48,27 @@ function App() {
     });
   }
 
-  // Sample histogram data for faster rendering (show every 4th value)
-  const sampledHistogram = histogram ? histogram.filter((_, i) => i % 4 === 0) : null;
-  const sampledLabels = Array.from({ length: sampledHistogram?.length || 0 }, (_, i) => i * 4);
+  // Create chart data from RGB channels
+  const chartData = histogramChannels
+    ? Array.from({ length: 64 }, (_, i) => {
+        const idx = i * 4;
+        return {
+          intensity: idx,
+          red: histogramChannels[0]?.data[idx] || 0,
+          green: histogramChannels[1]?.data[idx] || 0,
+          blue: histogramChannels[2]?.data[idx] || 0,
+          gray: histogramChannels[3]?.data[idx] || 0,
+        };
+      })
+    : null;
+
+  function handleLegendClicked(data: any): void {
+    const dataKey = data.dataKey;
+    setVisibleAreas(prev => ({
+      ...prev,
+      [dataKey]: !prev[dataKey as keyof typeof visibleAreas]
+    }));
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
@@ -128,20 +148,48 @@ function App() {
           {/* Chart */}
           <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Histogram</h2>
-            {sampledHistogram && sampledHistogram.length > 0 ? (
+            {chartData && chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart
-                  data={sampledHistogram.map((value, i) => ({
-                    intensity: sampledLabels[i],
-                    frequency: value,
-                  }))}
+                  data={chartData}
                   margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+                  
                 >
+                  <Legend onClick={handleLegendClicked}/>
                   <Area 
                     type="monotone" 
-                    dataKey="frequency" 
+                    dataKey="red" 
+                    fill="#ef4444" 
+                    stroke="#dc2626"
+                    fillOpacity={visibleAreas.red ? 0.6 : 0}
+                    strokeOpacity={visibleAreas.red ? 1 : 0}
+                    isAnimationActive={false}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="green" 
+                    fill="#22c55e" 
+                    stroke="#16a34a"
+                    fillOpacity={visibleAreas.green ? 0.6 : 0}
+                    strokeOpacity={visibleAreas.green ? 1 : 0}
+                    isAnimationActive={false}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="blue" 
                     fill="#3b82f6" 
-                    stroke="#1e40af"
+                    stroke="#1d4ed8"
+                    fillOpacity={visibleAreas.blue ? 0.6 : 0}
+                    strokeOpacity={visibleAreas.blue ? 1 : 0}
+                    isAnimationActive={false}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="gray" 
+                    fill="#818181" 
+                    stroke="#444444"
+                    fillOpacity={visibleAreas.gray ? 0.3 : 0}
+                    strokeOpacity={visibleAreas.gray ? 1 : 0}
                     isAnimationActive={false}
                   />
                 </AreaChart>

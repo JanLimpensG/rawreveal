@@ -35,8 +35,13 @@ func (a *App) Greet(name string) string {
 }
 
 type ImageData struct {
-	Base64Image string `json:"base64Image"`
-	Histogram   []int  `json:"histogram"`
+	Base64Image string          `json:"base64Image"`
+	Data        []HistogramData `json:"histogram"`
+}
+
+type HistogramData struct {
+	Channel string `json:"channel"`
+	Data    []int  `json:"data"`
 }
 
 func (a *App) ReadFile(path string) (ImageData, error) {
@@ -51,7 +56,7 @@ func (a *App) ReadFile(path string) (ImageData, error) {
 		return ImageData{}, err
 	}
 
-	histogram, err := generateGrayscaleHistogram(img)
+	rHist, gHist, bHist, grayHist, err := generateHistograms(img)
 	if err != nil {
 		return ImageData{}, err
 	}
@@ -66,7 +71,12 @@ func (a *App) ReadFile(path string) (ImageData, error) {
 	// Return base64 of inverted image
 	return ImageData{
 		Base64Image: base64.StdEncoding.EncodeToString(buf.Bytes()),
-		Histogram:   histogram,
+		Data: []HistogramData{
+			{Channel: "Red", Data: rHist},
+			{Channel: "Green", Data: gHist},
+			{Channel: "Blue", Data: bHist},
+			{Channel: "Grayscale", Data: grayHist},
+		},
 	}, nil
 }
 
@@ -107,17 +117,28 @@ func (a *App) InvertImage(base64Src string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
-func generateGrayscaleHistogram(src image.Image) ([]int, error) {
-	hist := make([]int, 256)
+func generateHistograms(src image.Image) ([]int, []int, []int, []int, error) {
+	rHist := make([]int, 256)
+	gHist := make([]int, 256)
+	bHist := make([]int, 256)
+	grayHist := make([]int, 256)
+
 	bounds := src.Bounds()
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := src.At(x, y).RGBA()
-			// Convert to 8-bit grayscale value
-			gray := uint8((r>>8 + g>>8 + b>>8) / 3)
-			hist[gray]++
+			// Convert to 8-bit values
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			gray := uint8((r8 + g8 + b8) / 3)
+
+			rHist[r8]++
+			gHist[g8]++
+			bHist[b8]++
+			grayHist[gray]++
 		}
 	}
 
-	return hist, nil
+	return rHist, gHist, bHist, grayHist, nil
 }
