@@ -57,3 +57,11 @@ The built application will be in the `build/bin/` directory.
 - Ensure consistent lighting when scanning negatives
 - For color negatives, the histogram shows red channel distribution
 - For fine-tuned adjustments, use the histogram to guide your exposure
+
+## Planned Features
+
+- **TIFF and RAW File Support** - Expand beyond PNG and JPG to work with professional image formats
+- **Customizable Film Stock Profiles** - Pre-configured settings optimized for different film types and emulsions
+- **User Profile System** - Save and reuse personalized inversion and editing profiles for consistent results across future scans
+- **Bulk Invert** - Process multiple image files in batch for efficient workflow with large scan collections
+- **Image Rating & Tagging** - Organize and categorize your scanned negatives with custom tags and ratings for easy sorting and retrieval
