@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OnFileDrop } from '../wailsjs/runtime'
-import { LoadImage } from '../wailsjs/go/main/App'
+import { LoadImage, UpdateImageSettings } from '../wailsjs/go/main/App'
 import { AreaChart, Area, Legend, ResponsiveContainer } from 'recharts'
 
 function App() {
@@ -10,6 +10,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visibleAreas, setVisibleAreas] = useState({ red: true, green: true, blue: true, gray: true });
+  const [exposure, setExposure] = useState(0);
+  const [whiteBalance, setWhiteBalance] = useState(0);
+  const [tint, setTint] = useState(0);
+  const [invert, setInvert] = useState(false);
 
   useEffect(() => {
       OnFileDrop(( _, __, paths) => {
@@ -51,10 +55,25 @@ function App() {
     }));
   }
 
+  function handleNegativeClick(): void {
+    const nextInvert = !invert;
+    setInvert(nextInvert);
+    UpdateImageSettings({
+      invert: nextInvert,
+      exposure: 0
+    }).then((data: any) => {
+      setBase64Image(data.image);
+      setHistogramData(data.histogram || null);
+    }).catch((err) => {
+      console.error('Error updating image settings:', err);
+      setError(err.message);
+    });
+  }
+
   return (
-    <div className="min-h-screen">
-        <div className="grid grid-cols-1  gap-6 mb-8">
-          {/* Image Drop Zone */}
+    <div className="grid grid-cols-2 min-h-screen gap-6">
+        {/* Image Panel */}
+        <div>
           <div className="grid-cols-2 bg-white rounded-2xl ">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Original Image</h2>
             <div
@@ -63,13 +82,16 @@ function App() {
             >
               {loading && (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                   <p className="text-gray-600">Processing...</p>
                 </div>
               )}
               {error && <p className="text-red-500 font-semibold text-center px-4">{error}</p>}
               {base64Image && !loading && (
-                <img src={`data:image/jpeg;base64,${base64Image}`} alt="Original" className="max-w-full max-h-96 object-contain" />
+                <img
+                  src={`data:image/jpeg;base64,${base64Image}`}
+                  alt="Original"
+                  className={`max-w-full max-h-96 object-contain}`}
+                />
               )}
               {!base64Image && !loading && !error && (
                 <div className="text-center">
@@ -80,10 +102,10 @@ function App() {
           </div>
         </div>
 
-        {/* Histogram Chart */}
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Histogram</h2>
+        {/* Editing Panel */}
+        <div className="flex flex-col gap-6">
+          {/* Histogram Chart */}
+          <div>
             {chartData && chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart
@@ -135,6 +157,67 @@ function App() {
                 <p className="text-gray-500">Upload an image to see histogram</p>
               </div>
             )}
+          </div>
+
+          {/* Sliders */}
+          <div className="flex flex-col gap-4 bg-white rounded-2xl p-4">
+            <div>
+              <label className="flex justify-between text-sm font-medium text-gray-700">
+                <span>Exposure</span>
+                <span>{exposure}</span>
+              </label>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                value={exposure}
+                onChange={(e) => setExposure(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="flex justify-between text-sm font-medium text-gray-700">
+                <span>White Balance</span>
+                <span>{whiteBalance}</span>
+              </label>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                value={whiteBalance}
+                onChange={(e) => setWhiteBalance(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="flex justify-between text-sm font-medium text-gray-700">
+                <span>Tint</span>
+                <span>{tint}</span>
+              </label>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                value={tint}
+                onChange={(e) => setTint(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {/* Invert Toggle */}
+          <div className="flex items-center justify-between bg-white rounded-2xl p-4">
+            <span className="text-sm font-medium text-gray-700">Invert Image</span>
+            <button
+              role="switch"
+              aria-checked={invert}
+              onClick={handleNegativeClick}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${invert ? "bg-blue-600" : "bg-gray-300"}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${invert ? "translate-x-6" : "translate-x-1"}`}
+              />
+            </button>
           </div>
         </div>
     </div>

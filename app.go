@@ -31,3 +31,9 @@ func (a *App) LoadImage(path string) (*imageproc.RenderResult, error) {
 	}
 	return a.document.RenderBase64()
 }
+
+func (a *App) UpdateImageSettings(settings imageproc.ProcessingSettings) (*imageproc.RenderResult, error) {
+	a.document.Settings = settings
+
+	return a.document.RenderBase64()
+}

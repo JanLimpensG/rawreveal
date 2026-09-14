@@ -90,5 +90,12 @@ func EncodeJPEGBase64(img image.Image, quality int) (string, error) {
 }
 
 func ApplySettings(img *LinearImage, settings ProcessingSettings) {
-	return // Placeholder for future implementation of processing settings
+	if settings.Exposure != 0 {
+		ApplyExposure(img, settings.Exposure)
+	}
+
+	if settings.Invert {
+		InvertImage(img)
+	}
+
 }
