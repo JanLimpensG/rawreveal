@@ -1,26 +1,26 @@
 import { useEffect, useState } from 'react'
 import { OnFileDrop } from '../wailsjs/runtime'
-import { ReadFile, InvertImage } from '../wailsjs/go/main/App'
-import { AreaChart, Area, Legend, ResponsiveContainer } from 'recharts'
+import { LoadImage  } from '../wailsjs/go/main/App'
+//import { AreaChart, Area, Legend, ResponsiveContainer } from 'recharts'
 
 function App() {
 
   const [base64Image, setBase64Image] = useState<string | null>(null);
-  const [histogramChannels, setHistogramChannels] = useState<{ channel: string; data: number[] }[] | null>(null);
-  const [invertedImage, setInvertedImage] = useState<string | null>(null);
+  //const [histogramData, setHistogramData] = useState<{ r: number[]; g: number[]; b: number[]; gray: number[] } | null>(null);
+  //const [invertedImage, setInvertedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [visibleAreas, setVisibleAreas] = useState({ red: true, green: true, blue: true, gray: true });
+ // const [visibleAreas, setVisibleAreas] = useState({ red: true, green: true, blue: true, gray: true });
 
   useEffect(() => {
       OnFileDrop(( _, __, paths) => {
         console.log('Dropped files:', paths);
         setLoading(true);
         setError(null);
-        ReadFile(paths[0]).then((data: any) => {
-          setBase64Image(data.base64Image);
-          // Store all histogram channels (Red, Green, Blue, Grayscale)
-          setHistogramChannels(data.histogram || null);
+        LoadImage(paths[0]).then((data: any) => {
+          setBase64Image(data);
+          // Store histogram with r, g, b, gray channels
+          //setHistogramData(data.histogram || null);
           setLoading(false);
         }).catch((err) => {
           console.error('Error reading file:', err);
@@ -30,6 +30,7 @@ function App() {
       }, true);
   }, [])
 
+  /*
   const onTransformClick = () => {
     if (!base64Image) {
       setError("No image to transform");
@@ -48,16 +49,16 @@ function App() {
     });
   }
 
-  // Create chart data from RGB channels
-  const chartData = histogramChannels
+  // Create chart data from histogram
+  const chartData = histogramData
     ? Array.from({ length: 64 }, (_, i) => {
         const idx = i * 4;
         return {
           intensity: idx,
-          red: histogramChannels[0]?.data[idx] || 0,
-          green: histogramChannels[1]?.data[idx] || 0,
-          blue: histogramChannels[2]?.data[idx] || 0,
-          gray: histogramChannels[3]?.data[idx] || 0,
+          red: histogramData.r[idx] || 0,
+          green: histogramData.g[idx] || 0,
+          blue: histogramData.b[idx] || 0,
+          gray: histogramData.gray[idx] || 0,
         };
       })
     : null;
@@ -69,18 +70,12 @@ function App() {
       [dataKey]: !prev[dataKey as keyof typeof visibleAreas]
     }));
   }
-
+*/
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          RawReveal
-        </h1>
-        <p className="text-gray-600 mb-8">Advanced Image Inversion & Analysis</p>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div className="min-h-screen">
+        <div className="grid grid-cols-1  gap-6 mb-8">
           {/* Image Drop Zone */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
+          <div className="grid-cols-2 bg-white rounded-2xl ">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Original Image</h2>
             <div
               className="border-3 border-dashed border-blue-300 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 min-h-96"
@@ -98,38 +93,16 @@ function App() {
               )}
               {!base64Image && !loading && !error && (
                 <div className="text-center">
-                  <p className="text-gray-500 text-lg">📁 Drop an image here</p>
-                  <p className="text-gray-400 text-sm mt-2">Supports PNG, JPG, and more</p>
+                  <p className="text-gray-500 text-lg">Drop an image here</p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Stats Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Statistics</h2>
-            <div className="space-y-6">
-              <div className="border-l-4 border-blue-500 pl-4">
-                <p className="text-gray-600 text-sm font-medium">Files Processed</p>
-                <p className="text-3xl font-bold text-blue-600">{base64Image ? 1 : 0}</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <p className="text-gray-600 text-sm font-medium">Status</p>
-                <p className={`text-2xl font-bold ${base64Image ? "text-green-600" : "text-gray-400"}`}>
-                  {base64Image ? "✓ Ready" : "○ Idle"}
-                </p>
-              </div>
-              <div className="border-l-4 border-purple-500 pl-4">
-                <p className="text-gray-600 text-sm font-medium">Mode</p>
-                <p className="text-lg font-bold text-purple-600">Invert</p>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Inverted Image and Chart */}
+        {/* Inverted Image and Chart 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Inverted Image */}
+          {/* Inverted Image 
           <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Inverted Image</h2>
             <div className="border-3 border-dashed border-purple-300 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 min-h-96">
@@ -138,14 +111,14 @@ function App() {
               )}
               {!invertedImage && !loading && (
                 <div className="text-center">
-                  <p className="text-gray-500 text-lg">🎨 Inverted image appears here</p>
+                  <p className="text-gray-500 text-lg">Inverted image appears here</p>
                   <p className="text-gray-400 text-sm mt-2">Click Transform to invert</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Chart */}
+          {/* Chart 
           <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Histogram</h2>
             {chartData && chartData.length > 0 ? (
@@ -202,17 +175,17 @@ function App() {
           </div>
         </div>
 
-        {/* Transform Button */}
+         Transform Button 
         <div>
           <button
             onClick={onTransformClick}
             disabled={!base64Image || loading}
             className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg rounded-xl hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:scale-105 active:scale-95"
           >
-            {loading ? "🔄 Processing..." : "✨ Transform Image"}
+            {loading ? "Processing..." : "Transform Image"}
           </button>
         </div>
-      </div>
+        */}
     </div>
   )
 }
