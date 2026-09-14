@@ -11,6 +11,11 @@ type Document struct {
 	Settings      ProcessingSettings `json:"settings"`
 }
 
+type RenderResult struct {
+	Image     string    `json:"image"`
+	Histogram Histogram `json:"histogram"`
+}
+
 func (d *Document) Load(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
@@ -41,11 +46,20 @@ func (d *Document) Render() (image.Image, error) {
 	return ConvertToSRGBImage(working), nil
 }
 
-func (d *Document) RenderBase64() (string, error) {
+func (d *Document) RenderBase64() (*RenderResult, error) {
 	img, err := d.Render()
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	base64Image, err := EncodeJPEGBase64(img, 90)
+	if err != nil {
+		return nil, err
+	}
+	hist := CalculateHistogram(d.OriginalImage)
+	result := &RenderResult{
+		Image:     base64Image,
+		Histogram: hist,
 	}
 
-	return EncodeJPEGBase64(img, 90)
+	return result, nil
 }

@@ -23,3 +23,19 @@ func (h *Histogram) AddPixel(r, g, b uint8) {
 
 	h.Gray[gray]++
 }
+
+func CalculateHistogram(img *LinearImage) Histogram {
+	hist := NewHistogram()
+
+	for i := range img.R {
+		r := Clamp01(LinearToSRGB(img.R[i]))
+		g := Clamp01(LinearToSRGB(img.G[i]))
+		b := Clamp01(LinearToSRGB(img.B[i]))
+
+		ri := uint8(r*255 + 0.5)
+		gi := uint8(g*255 + 0.5)
+		bi := uint8(b*255 + 0.5)
+		hist.AddPixel(ri, gi, bi)
+	}
+	return *hist
+}

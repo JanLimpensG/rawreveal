@@ -24,10 +24,10 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) LoadImage(path string) (string, error) {
+func (a *App) LoadImage(path string) (*imageproc.RenderResult, error) {
 	err := a.document.Load(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return a.document.RenderBase64()
 }
